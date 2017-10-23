@@ -1,4 +1,4 @@
-package hello;
+package App;
 
 import org.json.simple.parser.ParseException;
 import org.springframework.boot.SpringApplication;

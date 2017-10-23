@@ -1,3 +1,5 @@
+package App;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -17,7 +19,7 @@ import java.sql.*;
 import java.util.Properties;
 
 public class GetDataVk {
-    public void getUsers(String city, String ageFrom, String ageTo, 
+    private void getUsers(String city, String ageFrom, String ageTo,
 	String id, String ACCESS_TOKEN)
 	throws URISyntaxException, IOException, ParseException, SQLException {
         URIBuilder builder = new URIBuilder();
@@ -50,7 +52,7 @@ public class GetDataVk {
                     JSONObject user = (JSONObject) userslist.get(i);
                     try {
                         System.out.println(user.get("uid") + "\n");
-                        getDataVk.getAudio(String.valueOf(user.get("uid")), 
+                        getAudio(String.valueOf(user.get("uid")),
 						st, ACCESS_TOKEN);
                     } catch (URISyntaxException e) {
                         e.printStackTrace();
@@ -71,8 +73,8 @@ public class GetDataVk {
 
         }
     }
-    
-    public static void getAudio(String userID, Statement st, 
+
+    private static void getAudio(String userID, Statement st,
 	String ACCESS_TOKEN)
 	throws URISyntaxException, IOException, ParseException, SQLException {
         String USER_ID = userID;
@@ -107,9 +109,7 @@ public class GetDataVk {
                         if (mp3.get("genre") != null)
                             genreID = Integer.parseInt(mp3.get("genre")
 				.toString());
-                        String sql = "INSERT Into musicrange
-				.usersdata(idUsersData, artist, title, genreID)
-				VALUES " + "('" + userID + "', '" + artistName
+                        String sql = "INSERT Into musicrange.usersdata(idUsersData, artist, title, genreID) VALUES " + "('" + userID + "', '" + artistName
 				+ "', '" + title + "', '" + genreID + "')";
                         try {
                             st.execute(sql);
