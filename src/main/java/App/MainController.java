@@ -65,12 +65,12 @@ public class MainController {
         JSONObject jsonRequest;
         JSONArray mp3list;
         if (_authService.IsUserAuthorised(token)) {
-            String usersID = _authService.GetUserIdFromToken(token);
+            String usersLogin = _authService.GetUserLoginFromToken(token);
             JSONParser parser = new JSONParser();
             try {
                 jsonRequest = (JSONObject) parser.parse(trackList);
                 mp3list = (JSONArray) jsonRequest.get("mp3list");
-                return _musicRecomendService.GetAudio(usersID, mp3list);
+                return _musicRecomendService.GetAudio(usersLogin, mp3list);
             } catch (ParseException e) {
                 throw new CannotParseRequestException();
             } catch (Exception e) {
@@ -85,7 +85,7 @@ public class MainController {
         JSONObject jsonRequest;
         JSONArray mp3list;
         if (_authService.IsUserAuthorised(token)) {
-            String usersID = _authService.GetUserIdFromToken(token);
+            String usersID = _authService.GetUserLoginFromToken(token);
             try {
                 JSONParser parser = new JSONParser();
                 jsonRequest = (JSONObject) parser.parse(trackList);

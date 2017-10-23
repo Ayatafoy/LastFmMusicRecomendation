@@ -23,7 +23,7 @@ import java.util.Map;
  */
 public class AuthService implements IAuthService {
 
-    private HashMap<String, Pair<LocalDateTime, Integer>> _tokens = new HashMap<>();
+    private HashMap<String, Pair<LocalDateTime, String>> _tokens = new HashMap<>();
     private SecureRandom random = new SecureRandom();
     private Connection _connection;
 
@@ -47,20 +47,19 @@ public class AuthService implements IAuthService {
 
     @Override
     public String GetToken(String login, String password) throws SQLException {
-        String sql = "select idUsers, password from musicrange.users where login = '" + login + "';";
+        String sql = "select password from musicrange.users where login = '" + login + "';";
         ResultSet resultSet;
         Statement statement = _connection.createStatement();
         resultSet = statement.executeQuery(sql);
         try {
             if (resultSet.next()) {
-                int userId = resultSet.getInt(1);
                 if (DigestUtils.sha256Hex(password).equals(resultSet.getString(2))) {
                     String token = generateToken(login);
-                    Pair<LocalDateTime, Integer> tokenInfo = new Pair(LocalDateTime.now(), userId);
-                    for (Map.Entry<String, Pair<LocalDateTime, Integer>> entry : _tokens.entrySet()) {
+                    Pair<LocalDateTime, String> tokenInfo = new Pair(LocalDateTime.now(), login);
+                    for (Map.Entry<String, Pair<LocalDateTime, String>> entry : _tokens.entrySet()) {
                         String oldToken = entry.getKey();
-                        int value = entry.getValue().getValue();
-                        if (value == userId) {
+                        String value = entry.getValue().getValue();
+                        if (value.equals(login)) {
                             _tokens.remove(oldToken);
                             break;
                         }
@@ -82,7 +81,7 @@ public class AuthService implements IAuthService {
     }
 
     @Override
-    public String GetUserIdFromToken(String token) {
+    public String GetUserLoginFromToken(String token) {
         return _tokens.get(token).getValue().toString();
     }
 

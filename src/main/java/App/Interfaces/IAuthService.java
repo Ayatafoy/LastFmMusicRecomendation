@@ -14,5 +14,5 @@ public interface IAuthService {
 
     boolean IsUserAuthorised(String token);
 
-    String GetUserIdFromToken(String token);
+    String GetUserLoginFromToken(String token);
 }
