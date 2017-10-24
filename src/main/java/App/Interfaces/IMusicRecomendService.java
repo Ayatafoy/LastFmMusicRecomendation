@@ -13,6 +13,4 @@ import java.util.ArrayList;
  */
 public interface IMusicRecomendService {
     ArrayList<String> GetAudio(String userId, JSONArray mp3list) throws SQLException, ParseException;
-
-    void SetEvaluation(String userId, JSONArray mp3list) throws SQLException, ParseException;
 }

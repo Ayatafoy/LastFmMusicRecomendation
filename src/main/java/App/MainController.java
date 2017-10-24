@@ -1,9 +1,5 @@
 package App;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.sql.*;
-import java.util.*;
 import App.Exceptions.CannotParseRequestException;
 import App.Exceptions.ServerErrorOccurredException;
 import App.Exceptions.UnauthorizedUserException;
@@ -14,6 +10,15 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Properties;
 
 @RestController
 public class MainController {
@@ -71,26 +76,6 @@ public class MainController {
                 jsonRequest = (JSONObject) parser.parse(trackList);
                 mp3list = (JSONArray) jsonRequest.get("mp3list");
                 return _musicRecomendService.GetAudio(usersLogin, mp3list);
-            } catch (ParseException e) {
-                throw new CannotParseRequestException();
-            } catch (Exception e) {
-                throw new ServerErrorOccurredException();
-            }
-        } else
-            throw new UnauthorizedUserException();
-    }
-
-    @RequestMapping(method = RequestMethod.POST, value = "/setEvaluation")
-    public void setEvaluation(@RequestBody String trackList, @RequestHeader(value = "token") String token) {
-        JSONObject jsonRequest;
-        JSONArray mp3list;
-        if (_authService.IsUserAuthorised(token)) {
-            String usersID = _authService.GetUserLoginFromToken(token);
-            try {
-                JSONParser parser = new JSONParser();
-                jsonRequest = (JSONObject) parser.parse(trackList);
-                mp3list = (JSONArray) jsonRequest.get("mp3list");
-                _musicRecomendService.SetEvaluation(usersID, mp3list);
             } catch (ParseException e) {
                 throw new CannotParseRequestException();
             } catch (Exception e) {

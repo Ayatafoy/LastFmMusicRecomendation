@@ -9,6 +9,11 @@ public class MyPair<T> extends Pair {
     public T left;
     public T right;
 
+    public MyPair(T left, T right) {
+        this.left = left;
+        this.right = right;
+    }
+
     @Override
     public T getLeft() {
         return left;
@@ -17,11 +22,6 @@ public class MyPair<T> extends Pair {
     @Override
     public T getRight() {
         return right;
-    }
-
-    public MyPair(T left, T right) {
-        this.left = left;
-        this.right = right;
     }
 
     public int compareTo(Object o) {
