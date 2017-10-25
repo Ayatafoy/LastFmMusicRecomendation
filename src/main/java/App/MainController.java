@@ -35,7 +35,7 @@ public class MainController {
         p.setProperty("password", "root");
         p.setProperty("useUnicode", "true");
         p.setProperty("characterEncoding", "UTF-8");
-        _connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/musicrange", p);
+        _connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/lastfm", p);
         _musicRecomendService = new MusicRecomendServiceLastFm(_connection);
         _authService = new AuthService(_connection);
     }
@@ -47,11 +47,12 @@ public class MainController {
         JSONParser parser = new JSONParser();
         try {
             userJson = (JSONObject) parser.parse(userData);
-            convertToUserModel(user, userJson);
+            user.Login = ((String) userJson.get("login")).toLowerCase();
+            user.Password = ((String) userJson.get("password"));
             _authService.RegisterUser(user);
         } catch (ParseException e) {
             throw new CannotParseRequestException();
-        } catch (SQLException e) {
+        } catch (Exception e) {
             throw new ServerErrorOccurredException();
         }
     }
@@ -60,7 +61,7 @@ public class MainController {
     public String getToken(@RequestParam(value = "login") String login, @RequestParam(value = "password") String password) {
         try {
             return _authService.GetToken(login, password);
-        } catch (SQLException e) {
+        } catch (Exception e) {
             throw new ServerErrorOccurredException();
         }
     }
@@ -83,15 +84,5 @@ public class MainController {
             }
         } else
             throw new UnauthorizedUserException();
-    }
-
-    private void convertToUserModel(User user, JSONObject userJson) {
-        user.Login = ((String) userJson.get("login")).toLowerCase();
-        user.Password = ((String) userJson.get("password"));
-        user.Name = ((String) userJson.get("name")).toLowerCase();
-        user.Dob = ((String) userJson.get("dob")).toLowerCase();
-        user.KindOfInteresting = ((String) userJson.get("KindOfInteresting")).toLowerCase();
-        user.Genre = ((String) userJson.get("genre")).toLowerCase();
-        user.Location = ((String) userJson.get("location")).toLowerCase();
     }
 }

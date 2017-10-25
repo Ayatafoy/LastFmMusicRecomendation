@@ -149,6 +149,4 @@ public class MusicRecomendServiceLastFm implements IMusicRecomendService {
         }
         return resultList;
     }
-
-
 }

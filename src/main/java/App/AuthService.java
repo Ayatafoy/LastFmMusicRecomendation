@@ -6,6 +6,7 @@ import App.Exceptions.UserAlreadyExistException;
 import App.Interfaces.IAuthService;
 import javafx.util.Pair;
 import org.apache.commons.codec.digest.DigestUtils;
+
 import java.security.SecureRandom;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -33,15 +34,14 @@ public class AuthService implements IAuthService {
     @Override
     public void RegisterUser(User user) throws SQLException {
         Statement statement = _connection.createStatement();
-        String sql = "select * from musicrange.users where login = '" + user.Login + "';";
+        String sql = "select * from lastfm.users where login = '" + user.Login + "';";
         ResultSet resultSet;
         resultSet = statement.executeQuery(sql);
         if (resultSet.next()) {
             throw new UserAlreadyExistException(user.Login);
         }
-        sql = "insert into musicrange.users (Login, Password, Name, DOB, KindOfInteresting, Genre, Location)  VALUES " +
-                "('" + user.Login + "', '" + DigestUtils.sha256Hex(user.Password) + "', '" + user.Name + "', '" + user.Dob + "', '" +
-                user.KindOfInteresting + "', '" + user.Genre + "', '" + user.Location + "')";
+        sql = "insert into lastfm.users (Login, Password)  VALUES " +
+                "('" + user.Login + "', '" + DigestUtils.sha256Hex(user.Password) + "')";
         statement.execute(sql);
     }
 
