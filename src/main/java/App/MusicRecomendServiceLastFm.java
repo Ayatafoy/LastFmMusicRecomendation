@@ -23,7 +23,7 @@ public class MusicRecomendServiceLastFm implements IMusicRecomendService {
         Statement statement = _connection.createStatement();
         ResultSet usersTracksResultSet = statement.executeQuery("SELECT * from userstracks");
         while (usersTracksResultSet.next()) {
-            String userLogin = usersTracksResultSet.getString(1),
+            String userLogin = usersTracksResultSet.getString(2),
                     trackFullName = usersTracksResultSet.getString(3);
             int plays = usersTracksResultSet.getInt(4);
             if (usersTracksPlays.get(userLogin) == null) {
@@ -50,8 +50,8 @@ public class MusicRecomendServiceLastFm implements IMusicRecomendService {
             for (int i = 0; i < mp3list.size(); i++) {
                 JSONObject mp3 = (JSONObject) mp3list.get(i);
                 String trackName = ((String) mp3.get("trackName")).toLowerCase();
-                int playCount = (int) mp3.get("playCount");
-                if (usersTracksPlays.get(userLogin).get(trackName) != playCount) {
+                int playCount = Math.toIntExact((long) mp3.get("playCount"));
+                if (usersTracksPlays.get(userLogin).get(trackName) == null || usersTracksPlays.get(userLogin).get(trackName) != playCount) {
                     usersTracksPlays.get(userLogin).put(trackName, playCount);
                     sql = "INSERT Into lastfm.userstracks(UserName, TrackFullName, PlaysCount) VALUES " +
                             "('" + userLogin + "', '" + trackName + "', '" + playCount + "')";
@@ -94,7 +94,7 @@ public class MusicRecomendServiceLastFm implements IMusicRecomendService {
                         Integer userTrackEvaluation = userTracksPlays.get(userLogin).get(trackName),
                                 friendTrackEvaluation = userTracksPlays.get(friendName).get(trackName);
                         Integer diff = Math.abs(userTrackEvaluation - friendTrackEvaluation),
-                                score = friendTrackEvaluation + friendTrackEvaluation;
+                                score = userTrackEvaluation + friendTrackEvaluation;
                         friendsRange.put(friendName, friendsRange.get(friendName) + score - diff);
                     }
                 }
@@ -137,6 +137,7 @@ public class MusicRecomendServiceLastFm implements IMusicRecomendService {
             i++;
         }
         //list(0).sublist(0), list(0).sublist(1), list(1).sublist(0), list(0).sublist(2), list(1).sublist(1), list(2).sublist(0)
+        i = 0;
         while (i < listOfTopUsersTracks.size()) {
             int j = 0;
             while (j <= i) {

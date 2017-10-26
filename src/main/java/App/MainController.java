@@ -61,6 +61,8 @@ public class MainController {
     public String getToken(@RequestParam(value = "login") String login, @RequestParam(value = "password") String password) {
         try {
             return _authService.GetToken(login, password);
+        } catch (UnauthorizedUserException e) {
+            throw new UnauthorizedUserException();
         } catch (Exception e) {
             throw new ServerErrorOccurredException();
         }
@@ -71,7 +73,7 @@ public class MainController {
         JSONObject jsonRequest;
         JSONArray mp3list;
         if (_authService.IsUserAuthorised(token)) {
-            String usersLogin = _authService.GetUserLoginFromToken(token);
+            String usersLogin = "jakedahn";//_authService.GetUserLoginFromToken(token);
             JSONParser parser = new JSONParser();
             try {
                 jsonRequest = (JSONObject) parser.parse(trackList);
