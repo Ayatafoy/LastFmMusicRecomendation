@@ -34,14 +34,18 @@ public class AuthService implements IAuthService {
     @Override
     public void RegisterUser(User user) throws SQLException {
         Statement statement = _connection.createStatement();
-        String sql = "select * from lastfm.users where login = '" + user.Login + "';";
+        String sql = "select * from lastfmdb.users where login = '" + user.Login + "';";
         ResultSet resultSet;
         resultSet = statement.executeQuery(sql);
         if (resultSet.next()) {
             throw new UserAlreadyExistException(user.Login);
         }
-        sql = "insert into lastfm.users (Login, Password)  VALUES " +
-                "('" + user.Login + "', '" + DigestUtils.sha256Hex(user.Password) + "')";
+        sql = "insert into lastfm.users (Login, Country, Age, Gender, Password)  VALUES " +
+                "('" + user.Login + "', '"
+                + user.Country + "', '"
+                + user.Age + "', '"
+                + user.Gender + "', '"
+                + DigestUtils.sha256Hex(user.Password) + "')";
         statement.execute(sql);
     }
 

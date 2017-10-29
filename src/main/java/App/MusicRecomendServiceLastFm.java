@@ -15,7 +15,10 @@ import java.util.HashMap;
 public class MusicRecomendServiceLastFm implements IMusicRecomendService {
 
     public ArrayList<String> resultList = new ArrayList<>();
-    public HashMap<String, HashMap<String, Integer>> usersTracksPlays = new HashMap<>();
+    public HashMap<String, HashMap<String, Integer>> usersArtistPlays = new HashMap<>();
+    public HashMap<String, HashMap<String, Integer>> usersAlbumPlays = new HashMap<>();
+    public HashMap<String, HashMap<String, Integer>> usersTagPlays = new HashMap<>();
+    public HashMap<String, HashMap<String, TrackInfo>> usersTracksPlays = new HashMap<>();
     private Connection _connection;
 
     public MusicRecomendServiceLastFm(Connection connection) throws SQLException, ParseException {
@@ -23,13 +26,33 @@ public class MusicRecomendServiceLastFm implements IMusicRecomendService {
         Statement statement = _connection.createStatement();
         ResultSet usersTracksResultSet = statement.executeQuery("SELECT * from userstracks");
         while (usersTracksResultSet.next()) {
-            String userLogin = usersTracksResultSet.getString(2),
-                    trackFullName = usersTracksResultSet.getString(3);
-            int plays = usersTracksResultSet.getInt(4);
+            String userLogin = usersTracksResultSet.getString(2);
+            TrackInfo track = new TrackInfo();
+            track.FullName = usersTracksResultSet.getString(3);
+            track.ArtistName = usersTracksResultSet.getString(4);
+            track.AlbumFullName = usersTracksResultSet.getString(5);
+            track.TagList = usersTracksResultSet.getString(6);
+            track.PlaysCount = usersTracksResultSet.getInt(7);
             if (usersTracksPlays.get(userLogin) == null) {
                 usersTracksPlays.put(userLogin, new HashMap<>());
             }
-            usersTracksPlays.get(userLogin).put(trackFullName, plays);
+            usersTracksPlays.get(userLogin).put(track.FullName, track);
+        }
+        setTrackAtributData(statement, "usersartists",  usersArtistPlays);
+        setTrackAtributData(statement, "usersalbums", usersAlbumPlays);
+        setTrackAtributData(statement, "userstags", usersTagPlays);
+    }
+
+    private void setTrackAtributData(Statement statement, String tableName, HashMap<String, HashMap<String, Integer>> trackAtributhashTable) throws SQLException {
+        ResultSet trackAtributResultSet = statement.executeQuery("SELECT * from " + tableName + "");
+        while (trackAtributResultSet.next()) {
+            String userLogin = trackAtributResultSet.getString(2),
+                    atributName = trackAtributResultSet.getString(3);
+            int plays = trackAtributResultSet.getInt(4);
+            if (trackAtributhashTable.get(userLogin) == null) {
+                trackAtributhashTable.put(userLogin, new HashMap<>());
+            }
+            trackAtributhashTable.get(userLogin).put(atributName, plays);
         }
     }
 
@@ -49,12 +72,24 @@ public class MusicRecomendServiceLastFm implements IMusicRecomendService {
             }
             for (int i = 0; i < mp3list.size(); i++) {
                 JSONObject mp3 = (JSONObject) mp3list.get(i);
-                String trackName = ((String) mp3.get("trackName")).toLowerCase();
-                int playCount = Math.toIntExact((long) mp3.get("playCount"));
-                if (usersTracksPlays.get(userLogin).get(trackName) == null || usersTracksPlays.get(userLogin).get(trackName) != playCount) {
-                    usersTracksPlays.get(userLogin).put(trackName, playCount);
-                    sql = "INSERT Into lastfm.userstracks(UserName, TrackFullName, PlaysCount) VALUES " +
-                            "('" + userLogin + "', '" + trackName + "', '" + playCount + "')";
+                TrackInfo track = new TrackInfo();
+                track.FullName = ((String) mp3.get("trackName")).toLowerCase();
+                track.ArtistName = ((String) mp3.get("artistName")).toLowerCase();
+                track.AlbumFullName = ((String) mp3.get("albumName")).toLowerCase();
+                track.TagList = ((String) mp3.get("tagName")).toLowerCase();
+                track.PlaysCount = Math.toIntExact((long) mp3.get("playCount"));
+                if (usersTracksPlays.get(userLogin).get(track.FullName) == null || usersTracksPlays.get(userLogin)
+                        .get(track.FullName).PlaysCount != track.PlaysCount) {
+                    usersTracksPlays.get(userLogin).put(track.FullName, track);
+                    sql = "INSERT Into lastfmdb" +
+                            ".userstracks(UserName, TrackFullName, ArtistName, AlbumFullName, TagNames, PlaysCount)" +
+                            " VALUES  ('"
+                            + userLogin + "', '"
+                            + track.FullName + "', '"
+                            + track.ArtistName + "', '"
+                            + track.AlbumFullName + "', '"
+                            + track.TagList + "', '"
+                            + track.PlaysCount + "')";
                     try {
                         statement.execute(sql);
                     } catch (SQLException e) {
@@ -66,13 +101,12 @@ public class MusicRecomendServiceLastFm implements IMusicRecomendService {
     }
 
     private ArrayList<String> searchAction(String usersLogin) throws SQLException, ParseException {
-        HashMap<String, Integer> friendsRange = range(usersTracksPlays, usersLogin);
+        HashMap<String, Integer> friendsRange = new HashMap<>();//range(usersTracksPlays, usersLogin);
         ArrayList<String> sortTrackList = Sort(friendsRange);
         if (sortTrackList != null) {
             recTrack(sortTrackList, usersLogin);
         }
         ArrayList<String> outResult = new ArrayList<>();
-
         int i = 0;
         while (outResult.size() != 100) {
             String track = resultList.get(i);

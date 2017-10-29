@@ -47,14 +47,21 @@ public class MainController {
         JSONParser parser = new JSONParser();
         try {
             userJson = (JSONObject) parser.parse(userData);
-            user.Login = ((String) userJson.get("login")).toLowerCase();
-            user.Password = ((String) userJson.get("password"));
+            parseUserInfo(user, userJson);
             _authService.RegisterUser(user);
         } catch (ParseException e) {
             throw new CannotParseRequestException();
         } catch (Exception e) {
             throw new ServerErrorOccurredException();
         }
+    }
+
+    private void parseUserInfo(User user, JSONObject userJson) {
+        user.Login = ((String) userJson.get("login")).toLowerCase();
+        user.Country = ((String) userJson.get("country")).toLowerCase();
+        user.Age = (int) userJson.get("country");
+        user.Gender = ((String) userJson.get("gender")).toLowerCase();
+        user.Password = ((String) userJson.get("password"));
     }
 
     @RequestMapping(method = RequestMethod.GET, value = "/getToken")
@@ -73,7 +80,7 @@ public class MainController {
         JSONObject jsonRequest;
         JSONArray mp3list;
         if (_authService.IsUserAuthorised(token)) {
-            String usersLogin = "jakedahn";//_authService.GetUserLoginFromToken(token);
+            String usersLogin = "ayatafoy";//_authService.GetUserLoginFromToken(token);
             JSONParser parser = new JSONParser();
             try {
                 jsonRequest = (JSONObject) parser.parse(trackList);

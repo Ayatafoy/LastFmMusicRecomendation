@@ -5,5 +5,8 @@ package App;
  */
 public class User {
     public String Login;
+    public String Country;
+    public int Age;
+    public String Gender;
     public String Password;
 }
