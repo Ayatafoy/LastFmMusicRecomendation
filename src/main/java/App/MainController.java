@@ -35,7 +35,7 @@ public class MainController {
         p.setProperty("password", "root");
         p.setProperty("useUnicode", "true");
         p.setProperty("characterEncoding", "UTF-8");
-        _connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/lastfm", p);
+        _connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/lastfmdb", p);
         _musicRecomendService = new MusicRecomendServiceLastFm(_connection);
         _authService = new AuthService(_connection);
     }
@@ -80,7 +80,7 @@ public class MainController {
         JSONObject jsonRequest;
         JSONArray mp3list;
         if (_authService.IsUserAuthorised(token)) {
-            String usersLogin = "ayatafoy";//_authService.GetUserLoginFromToken(token);
+            String usersLogin = "Duck_Duck_Goose";//_authService.GetUserLoginFromToken(token);
             JSONParser parser = new JSONParser();
             try {
                 jsonRequest = (JSONObject) parser.parse(trackList);

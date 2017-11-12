@@ -8,5 +8,5 @@ public class TrackInfo {
     public String ArtistName;
     public String AlbumFullName;
     public String TagList;
-    public int PlaysCount;
+    public double PlaysCount;
 }
