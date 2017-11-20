@@ -80,7 +80,7 @@ public class MainController {
         JSONObject jsonRequest;
         JSONArray mp3list;
         if (_authService.IsUserAuthorised(token)) {
-            String usersLogin = "Duck_Duck_Goose";//_authService.GetUserLoginFromToken(token);
+            String usersLogin = _authService.GetUserLoginFromToken(token);
             JSONParser parser = new JSONParser();
             try {
                 jsonRequest = (JSONObject) parser.parse(trackList);

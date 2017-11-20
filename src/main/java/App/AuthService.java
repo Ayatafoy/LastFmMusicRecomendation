@@ -51,7 +51,7 @@ public class AuthService implements IAuthService {
 
     @Override
     public String GetToken(String login, String password) throws SQLException {
-        String sql = "select password from lastfm.users where login = '" + login + "';";
+        String sql = "select password from lastfmdb.users where login = '" + login + "';";
         ResultSet resultSet;
         Statement statement = _connection.createStatement();
         resultSet = statement.executeQuery(sql);
@@ -80,9 +80,8 @@ public class AuthService implements IAuthService {
 
     @Override
     public boolean IsUserAuthorised(String token) {
-        return true;
-//                _tokens.get(token) != null
-//                && ChronoUnit.MINUTES.between(_tokens.get(token).getKey(), LocalDateTime.now()) <= 5;
+        return _tokens.get(token) != null
+                && ChronoUnit.MINUTES.between(_tokens.get(token).getKey(), LocalDateTime.now()) <= 5;
     }
 
     @Override

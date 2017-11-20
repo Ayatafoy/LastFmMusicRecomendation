@@ -14,17 +14,20 @@ import java.util.HashMap;
 
 public class MusicRecomendServiceLastFm implements IMusicRecomendService {
 
-    public HashMap<String, HashMap<String, Double>> usersTracksPlays = new HashMap<>();
-    public HashMap<String, HashMap<String, Double>> usersArtistPlays = new HashMap<>();
-    public HashMap<String, HashMap<String, Double>> usersAlbumPlays = new HashMap<>();
-    public HashMap<String, HashMap<String, Double>> usersTagPlays = new HashMap<>();
-    public HashMap<String, HashMap<String, TrackInfo>> usersTracksInfoPlays = new HashMap<>();
+    private HashMap<String, HashMap<String, Double>> usersTracksPlays = new HashMap<>();
+    private HashMap<String, HashMap<String, Double>> usersArtistPlays = new HashMap<>();
+    private HashMap<String, HashMap<String, TrackInfo>> usersTracksInfoPlays = new HashMap<>();
     private Connection _connection;
 
     public MusicRecomendServiceLastFm(Connection connection) throws SQLException, ParseException {
         _connection = connection;
         Statement statement = _connection.createStatement();
-        ResultSet usersTracksResultSet = statement.executeQuery("SELECT * from userstracks where iduserstracks < 100096");
+        setUsersTracksData(statement);
+        setUsersArtistData(statement);
+    }
+
+    private void setUsersTracksData(Statement statement) throws SQLException {
+        ResultSet usersTracksResultSet = statement.executeQuery("SELECT * from userstracks where iduserstracks < 3500038");
         while (usersTracksResultSet.next()) {
             String userLogin = usersTracksResultSet.getString(2);
             TrackInfo track = new TrackInfo();
@@ -40,28 +43,25 @@ public class MusicRecomendServiceLastFm implements IMusicRecomendService {
             usersTracksInfoPlays.get(userLogin).put(track.FullName, track);
             usersTracksPlays.get(userLogin).put(track.FullName, track.PlaysCount);
         }
-        setTrackAtributData(statement, "usersartists", usersArtistPlays, "idusersartists", 73462);
-        setTrackAtributData(statement, "usersalbums", usersAlbumPlays, "idusersalbums", 73850);
-        setTrackAtributData(statement, "userstags", usersTagPlays, "iduserstags", 7022);
     }
 
-    private void setTrackAtributData(Statement statement, String tableName, HashMap<String, HashMap<String, Double>> trackAtributhashTable, String columnName, int maxCount) throws SQLException {
-        ResultSet trackAtributResultSet = statement.executeQuery("SELECT * from " + tableName + " where " + columnName + " < " + String.valueOf(maxCount));
-        while (trackAtributResultSet.next()) {
-            String userLogin = trackAtributResultSet.getString(2),
-                    atributValue = trackAtributResultSet.getString(3);
-            double plays = trackAtributResultSet.getDouble(4);
-            if (trackAtributhashTable.get(userLogin) == null) {
-                trackAtributhashTable.put(userLogin, new HashMap<>());
+    private void setUsersArtistData(Statement statement) throws SQLException {
+        ResultSet usersArtistsResultSet = statement.executeQuery("SELECT * from usersartists where idusersartists < 1771393");
+        while (usersArtistsResultSet.next()) {
+            String userLogin = usersArtistsResultSet.getString(2),
+                    artistFullName = usersArtistsResultSet.getString(3);
+            double plays = usersArtistsResultSet.getDouble(4);
+            if (usersArtistPlays.get(userLogin) == null) {
+                usersArtistPlays.put(userLogin, new HashMap<>());
             }
-            trackAtributhashTable.get(userLogin).put(atributValue, plays);
+            usersArtistPlays.get(userLogin).put(artistFullName, plays);
         }
     }
 
     @Override
     public ArrayList<String> GetAudio(String usersLogin, JSONArray mp3list) throws ParseException, SQLException {
         SetNewUserTracks(usersLogin, mp3list);
-        return searchAction(usersLogin);
+        return calculateRecommendations(usersLogin);
     }
 
     private void SetNewUserTracks(String userLogin, JSONArray mp3list) throws SQLException {
@@ -75,10 +75,6 @@ public class MusicRecomendServiceLastFm implements IMusicRecomendService {
                     parseJsonToTrackInfo(mp3, track);
                     updateUserTrackData(userLogin, track);
                     updateUserArtistData(userLogin, track);
-                    updateUserAlbumData(userLogin, track);
-                    for (String tagName : track.TagList.split("   ")) {
-                        updateUserTagData(userLogin, tagName);
-                    }
                 }
                 insertNewTrackInfoToDb(userLogin);
             }
@@ -88,8 +84,6 @@ public class MusicRecomendServiceLastFm implements IMusicRecomendService {
     private void setNewHashMapsToNewUser(String userLogin) {
         usersTracksPlays.put(userLogin, new HashMap<>());
         usersArtistPlays.put(userLogin, new HashMap<>());
-        usersAlbumPlays.put(userLogin, new HashMap<>());
-        usersTagPlays.put(userLogin, new HashMap<>());
         usersTracksInfoPlays.put(userLogin, new HashMap<>());
     }
 
@@ -110,36 +104,10 @@ public class MusicRecomendServiceLastFm implements IMusicRecomendService {
         }
     }
 
-    private void updateUserAlbumData(String userLogin, TrackInfo track) throws SQLException {
-        if (!track.AlbumFullName.trim().equals(track.AlbumFullName.trim())) {
-            if (usersAlbumPlays.get(userLogin).get(track.AlbumFullName) == null) {
-                usersAlbumPlays.get(userLogin).put(track.AlbumFullName, track.PlaysCount);
-            } else {
-                double oldPlayCountValue = usersAlbumPlays.get(userLogin).get(track.AlbumFullName);
-                double newPlayCountValue = oldPlayCountValue + track.PlaysCount;
-                usersAlbumPlays.get(userLogin).put(track.AlbumFullName, newPlayCountValue);
-            }
-        }
-    }
-
-    private void updateUserTagData(String userLogin, String tagName) throws SQLException {
-        if (tagName != null && !tagName.equals("")) {
-            if (usersTagPlays.get(userLogin).get(tagName) == null) {
-                usersTagPlays.get(userLogin).put(tagName, 1.0);
-            } else {
-                double oldPlayCountValue = usersTagPlays.get(userLogin).get(tagName);
-                double newPlayCountValue = oldPlayCountValue + 1;
-                usersTagPlays.get(userLogin).put(tagName, newPlayCountValue);
-            }
-        }
-    }
-
     private void insertNewTrackInfoToDb(String userLogin) throws SQLException {
         Statement statement = _connection.createStatement();
         String sqlInsertToUsersTracks;
         String sqlInsertToUsersArtists;
-        String sqlInsertToUsersAlbums;
-        String sqlInsertToUsersTags;
         for (String trackFullName:usersTracksPlays.get(userLogin).keySet()) {
             TrackInfo track = usersTracksInfoPlays.get(userLogin).get(trackFullName);
             sqlInsertToUsersTracks = "INSERT Into lastfmdb" +
@@ -163,26 +131,6 @@ public class MusicRecomendServiceLastFm implements IMusicRecomendService {
                     + playCount + "')";
             statement.execute(sqlInsertToUsersArtists);
         }
-        for (String albumName:usersAlbumPlays.get(userLogin).keySet()) {
-            double playCount = usersAlbumPlays.get(userLogin).get(albumName);
-            sqlInsertToUsersAlbums = "INSERT Into lastfmdb" +
-                    ".usersalbums(Login, AlbumFullName, PlaysCount)" +
-                    " VALUES  ('"
-                    + userLogin + "', '"
-                    + albumName + "', '"
-                    + playCount + "')";
-            statement.execute(sqlInsertToUsersAlbums);
-        }
-        for (String tagName:usersTagPlays.get(userLogin).keySet()) {
-            double playCount = usersTagPlays.get(userLogin).get(tagName);
-            sqlInsertToUsersTags = "INSERT Into lastfmdb" +
-                    ".userstags(Login, TagName, PlaysCount)" +
-                    " VALUES  ('"
-                    + userLogin + "', '"
-                    + tagName + "', '"
-                    + playCount + "')";
-            statement.execute(sqlInsertToUsersTags);
-        }
     }
 
     private void parseJsonToTrackInfo(JSONObject mp3, TrackInfo track) {
@@ -193,47 +141,27 @@ public class MusicRecomendServiceLastFm implements IMusicRecomendService {
         track.PlaysCount = Math.toIntExact((long) mp3.get("PlaysCount"));
     }
 
-    private ArrayList<String> searchAction(String usersLogin) throws SQLException, ParseException {
-        ArrayList<String> resultListContainsControlUserTracks = new ArrayList<>();
+    //Основной алгоритм рекомендаций
+    private ArrayList<String> calculateRecommendations(String usersLogin) throws SQLException, ParseException {
+        int i = 0;
         ArrayList<String> outResult = new ArrayList<>();
-        HashMap<String, Double> friendsRangeByTracks = range(usersTracksPlays, usersLogin);
-        HashMap<String, Double> friendsRangeByArtists = range(usersArtistPlays,usersLogin);
-        HashMap<String, Double> friendsRangeByAlbums = range(usersAlbumPlays, usersLogin);
-        HashMap<String, Double> friendsRangeByTags = range(usersTagPlays, usersLogin);
+        HashMap<String, Double> friendsRangeByTracks = friendsRange(usersTracksPlays, usersLogin);
+        HashMap<String, Double> friendsRangeByArtists = friendsRange(usersArtistPlays,usersLogin);
         ArrayList<String> sortFriendsListByTracks = firstHundredItems(friendsRangeByTracks);
         ArrayList<String> sortFriendsListByArtists = firstHundredItems(friendsRangeByArtists);
-        ArrayList<String> sortFriendsListByAlbums = firstHundredItems(friendsRangeByAlbums);
-        ArrayList<String> sortFriendsListByTags = firstHundredItems(friendsRangeByTags);
         ArrayList<String> mostSimilarUsersByAllAttributes = findMostSimilarUsers(sortFriendsListByTracks, sortFriendsListByArtists);
-        if (mostSimilarUsersByAllAttributes != null) {
-            resultListContainsControlUserTracks = recTrack(mostSimilarUsersByAllAttributes, usersLogin);
-        }
-
-        int i = 0, k = 0;
+        ArrayList<String> resultListContainsControlUserTracks = calculateResult(mostSimilarUsersByAllAttributes, usersLogin);
         while (i < Math.min(100, resultListContainsControlUserTracks.size())) {
             String track = resultListContainsControlUserTracks.get(i);
-            if (!outResult.contains(track) && usersTracksPlays.get(usersLogin).get(track) == null)
+            if (usersTracksPlays.get(usersLogin).get(track) == null && !outResult.contains(track))
                 outResult.add(track);
-            else
-                k++;
             i++;
         }
-        System.out.println(k);
         return outResult;
     }
 
-    private ArrayList<String> findMostSimilarUsers(ArrayList<String> sortFriendsListByTracks, ArrayList<String> sortFriendsListByArtists) {
-        ArrayList<String> friendsList = new ArrayList<>();
-        for (String friendName:sortFriendsListByTracks) {
-            if (sortFriendsListByArtists.contains(friendName)){
-                friendsList.add(friendName);
-            }
-        }
-        return friendsList;
-    }
-
     //пересекаем списки треков и считаем оценку результата
-    private HashMap<String, Double> range(HashMap<String, HashMap<String, Double>> trackAtributhashTable, String userLogin) {
+    private HashMap<String, Double> friendsRange(HashMap<String, HashMap<String, Double>> trackAtributhashTable, String userLogin) {
         HashMap<String, Double> friendsRange = new HashMap<>();
         for (String friendName : trackAtributhashTable.keySet()) {
             friendsRange.put(friendName, 0.0);
@@ -250,20 +178,6 @@ public class MusicRecomendServiceLastFm implements IMusicRecomendService {
             }
         }
         return friendsRange;
-    }
-
-    //преобразовываем последовательность к виду: max = 1, остальные по убыванию > 1, чтобы мы работали с единым порядком числа для всех
-    private static <T> HashMap<T, Double> normOrderMagnitude(HashMap<T, Double> map) {
-        double x, max = 0;
-        for (T cell : map.keySet()) {
-            x = map.get(cell);
-            if (max < x)
-                max = x;
-        }
-        for (T cell : map.keySet()) {
-            map.put(cell, map.get(cell) / max);
-        }
-        return map;
     }
 
     private <T> ArrayList<String> firstHundredItems(HashMap<T, Double> items) {
@@ -288,31 +202,30 @@ public class MusicRecomendServiceLastFm implements IMusicRecomendService {
         return sortedFriendsList;
     }
 
+    private ArrayList<String> findMostSimilarUsers(ArrayList<String> sortFriendsListByTracks, ArrayList<String> sortFriendsListByArtists) {
+        ArrayList<String> friendsList = new ArrayList<>();
+        for (String friendName:sortFriendsListByTracks) {
+            if (sortFriendsListByArtists.contains(friendName)){
+                friendsList.add(friendName);
+            }
+        }
+        return friendsList;
+    }
+
     //ранжируем списки аудиозаписей пользователей с учетом моих предпочтений, выводим список рекомендаций аудиозаписей
-    private ArrayList<String> recTrack(ArrayList<String> sortedFriendsList, String userLogin) {
+    private ArrayList<String> calculateResult(ArrayList<String> sortedFriendsList, String userLogin) {
+        int i = 0;
         HashMap<String, Double> controlUserArtistEvaluation = normOrderMagnitude(usersArtistPlays.get(userLogin));
-        HashMap<String, Double> controlUserAlbumEvaluation = normOrderMagnitude(usersAlbumPlays.get(userLogin));
-        HashMap<String, Double> controlUserTagEvaluation = normOrderMagnitude(usersTagPlays.get(userLogin));
         ArrayList<ArrayList> listOfTopUsersTracks = new ArrayList<>();
         ArrayList<String> resultList = new ArrayList<>();
-        int i = 0;
         for (String friendName:sortedFriendsList) {
             HashMap<String, Double> controlUserFriendsTrackEvaluation = new HashMap<>();
             for (String trackFullName : usersTracksInfoPlays.get(friendName).keySet()) {
                 TrackInfo friendTrackInfo = usersTracksInfoPlays.get(friendName).get(trackFullName);
                 double controlUserArtistEvaluationOfTrack = 0.0;
-                double controlUserAlbumEvaluationOfTrack = 0.0;
-                double controlUserTagEvaluationOfTrack = 0.0;
                 if (controlUserArtistEvaluation.get(friendTrackInfo.ArtistName) != null)
                     controlUserArtistEvaluationOfTrack = controlUserArtistEvaluation.get(friendTrackInfo.ArtistName);
-                if (controlUserAlbumEvaluation.get(friendTrackInfo.AlbumFullName) != null)
-                    controlUserAlbumEvaluationOfTrack = controlUserAlbumEvaluation.get(friendTrackInfo.AlbumFullName);
-                for (String tagName:friendTrackInfo.TagList.split("   ")) {
-                    if (controlUserTagEvaluation.get(tagName) != null)
-                        controlUserTagEvaluationOfTrack += controlUserTagEvaluation.get(tagName);
-                }
-                double finalTrackEvaluation = controlUserArtistEvaluationOfTrack + controlUserAlbumEvaluationOfTrack + controlUserTagEvaluationOfTrack;
-                controlUserFriendsTrackEvaluation.put(trackFullName, finalTrackEvaluation);
+                controlUserFriendsTrackEvaluation.put(trackFullName, controlUserArtistEvaluationOfTrack);
             }
             listOfTopUsersTracks.add(i, firstHundredItems(controlUserFriendsTrackEvaluation));
             i++;
@@ -331,5 +244,20 @@ public class MusicRecomendServiceLastFm implements IMusicRecomendService {
             i++;
         }
         return resultList;
+    }
+
+    //преобразовываем последовательность к виду: max = 1, остальные по убыванию > 1, чтобы мы работали с единым порядком числа для всех
+    private static <T> HashMap<T, Double> normOrderMagnitude(HashMap<T, Double> map) {
+        double x, max = 0;
+        HashMap<T, Double> resultMap = new HashMap<>();
+        for (T cell : map.keySet()) {
+            x = map.get(cell);
+            if (max < x)
+                max = x;
+        }
+        for (T cell : map.keySet()) {
+            resultMap.put(cell, map.get(cell) / max);
+        }
+        return resultMap;
     }
 }
